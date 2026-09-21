@@ -7,6 +7,11 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison flex libssl-dev libelf-dev libncurses-dev
+
       - name: Checkout kernel source
         uses: actions/checkout@v4
         with:
@@ -16,26 +21,28 @@ jobs:
         run: |
           git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9 toolchain
 
-            - name: Build kernel
+      - name: Build kernel
         run: |
           export ARCH=arm
           export CROSS_COMPILE=$GITHUB_WORKSPACE/toolchain/bin/arm-linux-androideabi-
           export HOSTCFLAGS="-fcommon"
+          export HOSTLDFLAGS="-fcommon"
           mkdir -p out
-          make O=out \
+          make O=out HOSTCFLAGS="-fcommon" HOSTLDFLAGS="-fcommon" \
             VARIANT_DEFCONFIG=msm8916_sec_gt58ltebmc_eur_defconfig \
             SELINUX_DEFCONFIG=selinux_defconfig \
             msm8916_sec_defconfig
-          make O=out HOSTCFLAGS="-fcommon" -j$(nproc) zImage dtbs
+          make O=out HOSTCFLAGS="-fcommon" HOSTLDFLAGS="-fcommon" -j$(nproc) zImage dtbs
 
       - name: Debug - list boot output
         run: |
-          ls -la out/arch/arm/boot/
-          find out -name "*Image*" -o -name "*.dtb"
+          ls -lh out/arch/arm/boot/
+          file out/arch/arm/boot/zImage
 
       - name: Upload result
         uses: actions/upload-artifact@v4
         with:
           name: kernel-build-output
           path: |
-            out/arch/arm/boot/*
+            out/arch/arm/boot/zImage
+            out/arch/arm/boot/dtb
