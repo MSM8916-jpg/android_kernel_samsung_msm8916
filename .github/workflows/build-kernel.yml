@@ -21,6 +21,7 @@ jobs:
         run: |
           export ARCH=arm
           export CROSS_COMPILE=arm-linux-gnueabihf-
+          mkdir -p out
           make O=out msm8916_sec_gt58ltebmc_eur_defconfig
           make O=out -j$(nproc)
 
