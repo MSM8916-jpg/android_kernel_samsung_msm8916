@@ -21,6 +21,7 @@ jobs:
         run: |
           export ARCH=arm
           export CROSS_COMPILE=arm-linux-gnueabihf-
+          export HOSTCFLAGS="-fcommon"
           mkdir -p out
           make O=out \
             VARIANT_DEFCONFIG=msm8916_sec_gt58ltebmc_eur_defconfig \
@@ -30,7 +31,7 @@ jobs:
             TIMA_DEFCONFIG= \
             DMVERITY_DEFCONFIG= \
             msm8916_sec_defconfig
-          make O=out -j$(nproc)
+          make O=out HOSTCFLAGS="-fcommon" -j$(nproc)
 
       - name: Upload result
         uses: actions/upload-artifact@v4
