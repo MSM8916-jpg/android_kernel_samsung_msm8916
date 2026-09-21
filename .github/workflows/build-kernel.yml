@@ -1,0 +1,33 @@
+name: Build Kernel P355
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout kernel source
+        uses: actions/checkout@v4
+        with:
+          ref: lineage-18.1
+
+      - name: Install toolchain & deps
+        run: |
+          sudo apt update
+          sudo apt install -y gcc-arm-linux-gnueabihf bc bison flex libssl-dev libncurses-dev
+
+      - name: Build kernel
+        run: |
+          export ARCH=arm
+          export CROSS_COMPILE=arm-linux-gnueabihf-
+          make O=out msm8916_sec_gt58ltebmc_eur_defconfig
+          make O=out -j$(nproc)
+
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-build-output
+          path: |
+            out/arch/arm/boot/Image.gz-dtb
+            out/arch/arm/boot/dts/*.dtb
