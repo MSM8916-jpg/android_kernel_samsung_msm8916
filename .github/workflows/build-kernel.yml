@@ -32,10 +32,14 @@ jobs:
             msm8916_sec_defconfig
           make O=out HOSTCFLAGS="-fcommon" -j$(nproc)
 
+      - name: Debug - list boot output
+        run: |
+          ls -la out/arch/arm/boot/
+          find out -name "*Image*" -o -name "*.dtb"
+
       - name: Upload result
         uses: actions/upload-artifact@v4
         with:
           name: kernel-build-output
           path: |
-            out/arch/arm/boot/Image.gz-dtb
-            out/arch/arm/boot/dts/*.dtb
+            out/arch/arm/boot/*
