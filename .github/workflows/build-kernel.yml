@@ -7,42 +7,75 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - name: Install deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bc bison flex libssl-dev libelf-dev libncurses-dev
-
       - name: Checkout kernel source
         uses: actions/checkout@v4
         with:
           ref: lineage-18.1
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison flex libssl-dev libelf-dev
+
       - name: Clone AOSP arm toolchain
         run: |
           git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9 toolchain
+          git clone --depth=1 https://github.com/LineageOS/android_system_tools_mkbootimg -b lineage-18.1 mkbootimg-tools
 
-      - name: Build kernel
+      - name: Build kernel + dt.img
         run: |
           export ARCH=arm
           export CROSS_COMPILE=$GITHUB_WORKSPACE/toolchain/bin/arm-linux-androideabi-
-          export HOSTCFLAGS="-fcommon"
+          export HOSTCFLAGS="-fcommon -std=gnu"
           export HOSTLDFLAGS="-fcommon"
           mkdir -p out
-          make O=out HOSTCFLAGS="-fcommon" HOSTLDFLAGS="-fcommon" \
+          
+          # 1. Config
+          make O=out \
             VARIANT_DEFCONFIG=msm8916_sec_gt58ltebmc_eur_defconfig \
             SELINUX_DEFCONFIG=selinux_defconfig \
+            SELINUX_LOG_DEFCONFIG= \
+            DEBUG_DEFCONFIG= \
+            TIMA_DEFCONFIG= \
+            DMVERITY_DEFCONFIG= \
             msm8916_sec_defconfig
-          make O=out HOSTCFLAGS="-fcommon" HOSTLDFLAGS="-fcommon" -j$(nproc) zImage dtbs
+          
+          # 2. Build zImage + dtbs
+          make O=out HOSTCFLAGS="-fcommon" -j$(nproc) zImage dtbs
+          
+          # 3. Build dt.img (INI YANG KEMARIN KETINGGALAN)
+          ls out/arch/arm/boot/dts/
+          ./tools/dtbToolCM/dtbTool -o out/arch/arm/boot/dt.img -s 2048 -p out/scripts/dtc/ out/arch/arm/boot/dts/ || \
+          ./tools/dtbTool/dtbTool -o out/arch/arm/boot/dt.img -s 2048 -p out/scripts/dtc/ out/arch/arm/boot/dts/
+
+      - name: Make boot.img (optional but biar langsung flash)
+        run: |
+          # Pake ramdisk dummy dulu buat test boot sampe logo kernel
+          # Kalo mau boot full, extract ramdisk dari boot.img LOS P355 lu
+          echo "build boot.img"
+          ls -lh out/arch/arm/boot/
+          # Contoh pack dengan ramdisk kosong (cuma test kernel bisa boot apa nggak)
+          # Nanti ganti ramdisk.gz punya LOS
+          python3 mkbootimg-tools/mkbootimg.py \
+            --kernel out/arch/arm/boot/zImage \
+            --dt out/arch/arm/boot/dt.img \
+            --base 0x80000000 \
+            --pagesize 2048 \
+            --kernel_offset 0x00008000 \
+            --ramdisk_offset 0x02000000 \
+            --tags_offset 0x01e00000 \
+            -o out/boot-p355-test.img || true
 
       - name: Debug - list boot output
         run: |
           ls -lh out/arch/arm/boot/
-          file out/arch/arm/boot/zImage
+          file out/arch/arm/boot/*
 
       - name: Upload result
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-build-output
+          name: kernel-p355-fixed
           path: |
             out/arch/arm/boot/zImage
-            out/arch/arm/boot/dtb
+            out/arch/arm/boot/dt.img
+            out/boot-p355-test.img
