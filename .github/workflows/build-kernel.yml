@@ -32,16 +32,15 @@ jobs:
             msm8916_sec_defconfig
           make O=out HOSTCFLAGS="-fcommon" -j$(nproc)
 
-      - name: Clone dtbToolCM
+      - name: Clone dtbTool source
         run: |
-          git clone --depth=1 https://github.com/LineageOS/android_device_qcom_common.git device-qcom-common
-          cd device-qcom-common/dtbtoolCM
-          gcc -o dtbToolCM dtbToolCM.c -Ilibufdt -lz 2>/dev/null || \
+          git clone --depth=1 --branch cm-13.0 https://github.com/CyanogenMod/android_device_qcom_common.git device-qcom-common
+          cd device-qcom-common/dtbtool
           gcc -o dtbToolCM *.c -I. -lz
 
       - name: Build dt.img
         run: |
-          ./device-qcom-common/dtbtoolCM/dtbToolCM -2 -o dt.img -s 2048 out/arch/arm/boot/dts/
+          ./device-qcom-common/dtbtool/dtbToolCM -s 2048 -o dt.img -p out/scripts/dtc/ out/arch/arm/boot/
 
       - name: Debug - list boot output
         run: |
