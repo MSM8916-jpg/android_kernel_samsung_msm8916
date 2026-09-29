@@ -40,8 +40,8 @@ jobs:
 
       - name: Build dt.img
         run: |
-          ./device-qcom-common/dtbtool/dtbToolCM -s 2048 -o dt.img -p out/scripts/dtc/ out/arch/arm/boot/
-
+          ./device-qcom-common/dtbtool/dtbToolCM -2 -o dt.img -s 2048 -p out/scripts/dtc/ out/arch/arm/boot/
+          
       - name: Debug - list boot output
         run: |
           ls -la out/arch/arm/boot/
