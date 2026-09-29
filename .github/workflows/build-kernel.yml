@@ -23,7 +23,7 @@ jobs:
           export HOSTCFLAGS="-fcommon"
           mkdir -p out
           make O=out \
-            VARIANT_DEFCONFIG=msm8916_sec_gt58ltebmc_eur_defconfig \
+            VARIANT_DEFCONFIG=msm8916_sec_gt58lte_tmo_defconfig \
             SELINUX_DEFCONFIG=selinux_defconfig \
             SELINUX_LOG_DEFCONFIG= \
             DEBUG_DEFCONFIG= \
